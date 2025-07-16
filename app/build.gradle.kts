@@ -1,16 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.plugin.compose)
 }
 
 android {
     namespace = "karpiuk.bookmary.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "karpiuk.bookmary.app"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
