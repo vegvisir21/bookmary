@@ -11,31 +11,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = prussianBlue,
-    onPrimary = white,
-    secondary = pictonBlue,
-    tertiary = webOrange,
-    background = white,
-    onSurface = prussianBlue,
-    onBackground = prussianBlue,
+private val LightColorScheme = lightColorScheme(
+    background = floralWhite,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = prussianBlue,
-    onPrimary = white,
-    secondary = pictonBlue,
-    tertiary = webOrange,
-    background = white,
-    onSurface = prussianBlue,
-    onBackground = prussianBlue,
+private val DarkColorScheme = darkColorScheme(
+
 )
 
 @Composable
 fun BookmaryTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

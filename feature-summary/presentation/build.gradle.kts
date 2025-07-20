@@ -60,5 +60,9 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     implementation(libs.ui.tooling.preview)
 
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     implementation(project(":core-ui"))
+    implementation(project(":feature-summary:domain"))
 }

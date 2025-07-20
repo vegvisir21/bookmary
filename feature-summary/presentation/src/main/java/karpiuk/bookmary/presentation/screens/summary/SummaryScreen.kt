@@ -1,12 +1,17 @@
 package karpiuk.bookmary.presentation.screens.summary
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -15,11 +20,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
+import karpiuk.bookmary.core_ui.theme.customColors
+import karpiuk.bookmary.domain.models.ChapterModel
+import karpiuk.bookmary.presentation.models.BookSummaryUiModel
 
 @Composable
 fun SummaryScreen(
@@ -29,12 +40,10 @@ fun SummaryScreen(
     val viewModel: SummaryViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
-    if (uiState.title.isNotEmpty()) {
-        SummaryScreen(
-            modifier = modifier,
-            uiState = uiState,
-        )
-    }
+    SummaryScreen(
+        modifier = modifier,
+        uiState = uiState,
+    )
 }
 
 @Composable
@@ -42,39 +51,116 @@ private fun SummaryScreen(
     modifier: Modifier = Modifier,
     uiState: SummaryUiState,
 ) {
+    val imageWeight = 4f
+    val contentWeight = 6f
+
     Scaffold(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets.statusBars
     ) {
         Column(
             modifier = Modifier
                 .padding(it)
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(16.dp)
+                .padding(vertical = 20.dp),
         ) {
-            Spacer(modifier = Modifier.height(30.dp))
-            Text(
+
+            BookCover(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 60.dp),
-                text = uiState.title,
-                style = MaterialTheme.typography.displayMedium,
-                textAlign = TextAlign.Center,
+                    .weight(imageWeight)
+                    .fillMaxSize(),
+                coverUrl = uiState.bookSummary.coverUrl,
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .weight(contentWeight)
+                    .fillMaxSize(),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ChapterInfo(
+                        chapterNumber = uiState.activeChapterNumber,
+                        chaptersTotal = uiState.chaptersTotal,
+                        chapterTitle = uiState.bookSummary.activeChapter.title,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
 
-@Preview
+@Composable
+private fun BookCover(
+    modifier: Modifier = Modifier,
+    coverUrl: String,
+) {
+    AsyncImage(
+        model = coverUrl,
+        contentDescription = null,
+        modifier = modifier
+            .wrapContentSize()
+            .clip(RoundedCornerShape(16.dp)),
+        contentScale = ContentScale.Inside
+    )
+}
+
+@Composable
+private fun ChapterInfo(
+    modifier: Modifier = Modifier,
+    chapterNumber: Int,
+    chaptersTotal: Int,
+    chapterTitle: String,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Key point $chapterNumber of $chaptersTotal".uppercase(),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.customColors.textSecondaryColor,
+            ),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = chapterTitle,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.customColors.textPrimaryColor,
+            ),
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 private fun SummaryScreenPreview() {
     BookmaryTheme {
         SummaryScreen(
             uiState = SummaryUiState(
-                title = "Summary screen"
+                bookSummary = BookSummaryUiModel(
+                    id = 1,
+                    coverUrl = "",
+                    audioSummaryUrl = "",
+                    activeChapter = ChapterModel(
+                        id = 1,
+                        title = "Design is not how a thing looks, but how is works",
+                        time = 1,
+                    ),
+                ),
+                activeChapterNumber = 1,
+                chaptersTotal = 10,
             ),
         )
     }

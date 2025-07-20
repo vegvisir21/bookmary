@@ -7,43 +7,25 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-//Primary
-internal val prussianBlue = Color(0xFF003851)
-internal val webOrange = Color(0xFFF4A800)
-internal val pictonBlue = Color(0xFF4FBADE)
-internal val tamarillo = Color(0xFF981313)
+internal val floralWhite = Color(0xFFFFF9F4)
 
-//Secondary
-private val highContrast = Color(0xFFEA6E15)
-internal val tealBlue = Color(0xFF03465E)
-internal val navyBlue = Color(0xFF455A64)
-internal val highlightBlue = Color(0xFF3176A7)
-internal val lightGrey = Color(0xFF86868A)
-internal val nobel = Color(0xFFB4B4B4)
-internal val geyser = Color(0xFFCDDADF)
-private val mintTulip = Color(0xFFCAEAF5)
-internal val oysterPink = Color(0xFFEAD0D0)
-private val bananaMania = Color(0xFFFCE5B3)
-
-//Background
-internal val white = Color(0xFFFFFFFF)
-internal val alabaster = Color(0xFFF9F9F9)
-internal val mercury = Color(0xFFE8E8E8)
+internal val raisinBlack = Color(0xFF272421)
+internal val spanishGray = Color(0xFF9F9994)
 
 @Immutable
 data class ExtendedColors(
-    val principleConnectionColor: Color = Color.Unspecified,
-    val principleConnectionOnBackgroundColor: Color = Color.Unspecified,
+    val textPrimaryColor: Color = Color.Unspecified,
+    val textSecondaryColor: Color = Color.Unspecified,
 )
 
 val LightExtendedColors = ExtendedColors(
-    principleConnectionColor = prussianBlue,
-    principleConnectionOnBackgroundColor = white,
+    textPrimaryColor = raisinBlack,
+    textSecondaryColor = spanishGray,
 )
 
 val DarkExtendedColors = ExtendedColors(
-    principleConnectionColor = prussianBlue,
-    principleConnectionOnBackgroundColor = white,
+    textPrimaryColor = raisinBlack,
+    textSecondaryColor = spanishGray,
 )
 
 val LocalCustomColorsPalette = staticCompositionLocalOf { ExtendedColors() }
