@@ -31,6 +31,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBar
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBarModel
+import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButton
+import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButtonModel
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
 import karpiuk.bookmary.domain.models.ChapterModel
@@ -120,6 +122,10 @@ private fun SummaryScreen(
                                 //
                             },
                         ),
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    OptionButton(
+                        model = OptionButtonModel(title = "Speed x1"),
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Button(onClick = onPlayClicked) {
