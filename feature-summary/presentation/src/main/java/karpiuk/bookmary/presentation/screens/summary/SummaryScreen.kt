@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBar
+import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBarModel
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
 import karpiuk.bookmary.domain.models.ChapterModel
@@ -40,9 +44,20 @@ fun SummaryScreen(
     val viewModel: SummaryViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
+    val audioProgressMs by viewModel.audioProgress.collectAsState()
+    val duration by viewModel.durationFlow.collectAsState()
+
+    val progressFraction = remember(audioProgressMs) {
+        if (uiState.duration == 0L) 0f else audioProgressMs / uiState.duration.toFloat()
+    }
+
     SummaryScreen(
         modifier = modifier,
         uiState = uiState,
+        playerProgress = progressFraction,
+        progress = audioProgressMs,
+        duration = duration,
+        onPlayClicked = viewModel::onPlayerClicked,
     )
 }
 
@@ -50,6 +65,10 @@ fun SummaryScreen(
 private fun SummaryScreen(
     modifier: Modifier = Modifier,
     uiState: SummaryUiState,
+    playerProgress: Float = 0f,
+    progress: Long = 0L,
+    duration: Long = 0L,
+    onPlayClicked: () -> Unit = {},
 ) {
     val imageWeight = 4f
     val contentWeight = 6f
@@ -85,18 +104,38 @@ private fun SummaryScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(40.dp))
                     ChapterInfo(
                         chapterNumber = uiState.activeChapterNumber,
                         chaptersTotal = uiState.chaptersTotal,
                         chapterTitle = uiState.bookSummary.activeChapter.title,
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+                    AudioProgressBar(
+                        model = AudioProgressBarModel(
+                            progress = playerProgress,
+                            currentTime = formatTime(progress),
+                            totalTime = formatTime(duration),
+                            onSeekChanged = {
+                                //
+                            },
+                        ),
+                    )
                     Spacer(modifier = Modifier.weight(1f))
+                    Button(onClick = onPlayClicked) {
+                        Text("Play")
+                    }
                 }
             }
         }
     }
+}
+
+fun formatTime(millis: Long): String {
+    val totalSec = millis / 1000
+    val minutes = totalSec / 60
+    val seconds = totalSec % 60
+    return "%02d:%02d".format(minutes, seconds)
 }
 
 @Composable
@@ -132,7 +171,7 @@ private fun ChapterInfo(
             ),
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(20.dp))
         Text(
             text = chapterTitle,
             style = MaterialTheme.typography.bodyLarge.copy(

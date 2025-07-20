@@ -7,4 +7,5 @@ data class BookSummaryUiModel(
     val coverUrl: String,
     val audioSummaryUrl: String,
     val activeChapter: ChapterModel,
+    val duration: Int = 0,
 )
