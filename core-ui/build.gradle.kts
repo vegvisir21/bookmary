@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "karpiuk.bookmary.core_ui"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 29
@@ -23,6 +23,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+    buildFeatures {
+        compose = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "karpiuk.bookmary.app"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "karpiuk.bookmary.app"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 

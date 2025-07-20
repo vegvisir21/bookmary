@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "karpiuk.bookmary.presentation"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 29
@@ -57,6 +57,8 @@ dependencies {
     kapt(libs.hilt.compiler)
 
     implementation(libs.androidx.navigation.compose)
+    debugImplementation(libs.ui.tooling)
+    implementation(libs.ui.tooling.preview)
 
     implementation(project(":core-ui"))
 }
