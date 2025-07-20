@@ -68,5 +68,6 @@ dependencies {
     implementation(libs.androidx.media3.common)
 
     implementation(project(":core-ui"))
+    implementation(project(":core-domain"))
     implementation(project(":feature-summary:domain"))
 }

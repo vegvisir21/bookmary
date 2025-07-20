@@ -67,6 +67,12 @@ internal class SummaryViewModel @Inject constructor(
         if (player.isPlaying()) stopPlayer() else startPlayer()
     }
 
+    fun onSpeedClicked() {
+        val nextSpeed = _uiState.value.playbackSpeed.getNextSpeed()
+        player.setPlaybackSpeed(nextSpeed.multiplier)
+        _uiState.update { it.copy(playbackSpeed = nextSpeed) }
+    }
+
     fun startPlayer() = player.resume()
 
     fun stopPlayer() = player.pause()

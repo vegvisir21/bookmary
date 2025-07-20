@@ -74,6 +74,8 @@ class AudioPlayer @Inject constructor(
         exoPlayer.release()
     }
 
+    fun setPlaybackSpeed(speed: Float) = exoPlayer.setPlaybackSpeed(speed)
+
     fun getDuration(): Long = exoPlayer.contentDuration
 
     fun isPlaying(): Boolean = exoPlayer.isPlaying

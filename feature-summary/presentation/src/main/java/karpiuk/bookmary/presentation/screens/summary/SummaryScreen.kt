@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import karpiuk.bookmary.core_domain.extensions.toTrimmedString
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBar
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBarModel
 import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButton
@@ -60,6 +61,7 @@ fun SummaryScreen(
         progress = audioProgressMs,
         duration = duration,
         onPlayClicked = viewModel::onPlayerClicked,
+        onSpeedClicked = viewModel::onSpeedClicked,
     )
 }
 
@@ -71,6 +73,7 @@ private fun SummaryScreen(
     progress: Long = 0L,
     duration: Long = 0L,
     onPlayClicked: () -> Unit = {},
+    onSpeedClicked: () -> Unit = {},
 ) {
     val imageWeight = 4f
     val contentWeight = 6f
@@ -125,7 +128,10 @@ private fun SummaryScreen(
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     OptionButton(
-                        model = OptionButtonModel(title = "Speed x1"),
+                        model = OptionButtonModel(
+                            title = "Speed x${uiState.playbackSpeed.multiplier.toTrimmedString()}",
+                            onClick = onSpeedClicked,
+                        ),
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Button(onClick = onPlayClicked) {
