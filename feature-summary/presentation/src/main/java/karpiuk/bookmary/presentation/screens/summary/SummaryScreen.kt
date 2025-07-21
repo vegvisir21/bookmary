@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,6 +33,7 @@ import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBar
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBarModel
 import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButton
 import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButtonModel
+import karpiuk.bookmary.core_ui.components.player_controller.PlayerController
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
 import karpiuk.bookmary.domain.models.ChapterModel
@@ -47,7 +47,7 @@ fun SummaryScreen(
     val viewModel: SummaryViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
-    val audioProgressMs by viewModel.audioProgress.collectAsState()
+    val audioProgressMs by viewModel.currentPositionFlow.collectAsState()
     val duration by viewModel.durationFlow.collectAsState()
 
     val progressFraction = remember(audioProgressMs) {
@@ -60,7 +60,6 @@ fun SummaryScreen(
         playerProgress = progressFraction,
         progress = audioProgressMs,
         duration = duration,
-        onPlayClicked = viewModel::onPlayerClicked,
         onSpeedClicked = viewModel::onSpeedClicked,
     )
 }
@@ -72,7 +71,6 @@ private fun SummaryScreen(
     playerProgress: Float = 0f,
     progress: Long = 0L,
     duration: Long = 0L,
-    onPlayClicked: () -> Unit = {},
     onSpeedClicked: () -> Unit = {},
 ) {
     val imageWeight = 4f
@@ -134,9 +132,10 @@ private fun SummaryScreen(
                         ),
                     )
                     Spacer(modifier = Modifier.weight(1f))
-                    Button(onClick = onPlayClicked) {
-                        Text("Play")
-                    }
+                    PlayerController(
+                        model = uiState.playerControllerModel,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

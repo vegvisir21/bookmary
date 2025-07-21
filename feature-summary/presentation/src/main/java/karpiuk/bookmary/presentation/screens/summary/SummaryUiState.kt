@@ -1,6 +1,7 @@
 package karpiuk.bookmary.presentation.screens.summary
 
 import karpiuk.bookmary.core_domain.enums.PlaybackSpeed
+import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
 import karpiuk.bookmary.presentation.models.BookSummaryUiModel
 
 data class SummaryUiState(
@@ -9,4 +10,5 @@ data class SummaryUiState(
     val activeChapterNumber: Int,
     val chaptersTotal: Int,
     val duration: Long = 0,
+    val playerControllerModel: PlayerControllerModel = PlayerControllerModel(),
 )

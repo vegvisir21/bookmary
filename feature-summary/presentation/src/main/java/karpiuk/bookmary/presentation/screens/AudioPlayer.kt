@@ -21,8 +21,8 @@ class AudioPlayer @Inject constructor(
 
     private val exoPlayer: ExoPlayer = ExoPlayer.Builder(context).build()
 
-    private val _progressFlow = MutableStateFlow(0L)
-    val progressFlow: StateFlow<Long> = _progressFlow
+    private val _currentPositionFlow = MutableStateFlow(0L)
+    val currentPositionFlow: StateFlow<Long> = _currentPositionFlow
 
     private val _durationFlow = MutableStateFlow(0L)
     val durationFlow: StateFlow<Long> = _durationFlow
@@ -52,7 +52,7 @@ class AudioPlayer @Inject constructor(
     private fun startProgressUpdates() {
         scope.launch {
             while (isActive) {
-                _progressFlow.emit(exoPlayer.currentPosition)
+                _currentPositionFlow.emit(exoPlayer.currentPosition)
                 delay(500L)
             }
         }
@@ -66,17 +66,23 @@ class AudioPlayer @Inject constructor(
         exoPlayer.play()
     }
 
-    fun stop() {
-        exoPlayer.stop()
+    fun rewind(millis: Long) {
+        val newPosition = (exoPlayer.currentPosition - millis).coerceAtLeast(0)
+        exoPlayer.seekTo(newPosition)
     }
 
-    fun release() {
-        exoPlayer.release()
+    fun fastForward(millis: Long) {
+        val newPosition = (exoPlayer.currentPosition + millis).coerceAtMost(exoPlayer.duration)
+        exoPlayer.seekTo(newPosition)
     }
+
+    fun seekTo(millis: Long) = exoPlayer.seekTo(millis)
+
+    fun stop() = exoPlayer.stop()
+
+    fun release() = exoPlayer.release()
 
     fun setPlaybackSpeed(speed: Float) = exoPlayer.setPlaybackSpeed(speed)
-
-    fun getDuration(): Long = exoPlayer.contentDuration
 
     fun isPlaying(): Boolean = exoPlayer.isPlaying
 }

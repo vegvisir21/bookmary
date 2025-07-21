@@ -2,7 +2,9 @@ package karpiuk.bookmary.presentation.screens.summary
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
 import karpiuk.bookmary.domain.models.BookSummaryModel
 import karpiuk.bookmary.domain.models.ChapterModel
 import karpiuk.bookmary.presentation.models.BookSummaryUiModel
@@ -39,7 +41,7 @@ internal class SummaryViewModel @Inject constructor(
     )
     val uiState = _uiState.asStateFlow()
 
-    val audioProgress: StateFlow<Long> = player.progressFlow
+    val currentPositionFlow: StateFlow<Long> = player.currentPositionFlow
     val durationFlow: StateFlow<Long> = player.durationFlow
 
     init {
@@ -54,6 +56,15 @@ internal class SummaryViewModel @Inject constructor(
                     ),
                     activeChapterNumber = 1,
                     chaptersTotal = duneTestData.chapters.size,
+                    playerControllerModel = PlayerControllerModel(
+                        isPlaying = false,
+                        onPlayPreviousClick = ::playPreviousChapter,
+                        onRewind = ::rewindPlayer,
+                        onPlayClick = ::resumePlayer,
+                        onPauseClick = ::pausePlayer,
+                        onForward = ::fastForwardPlayer,
+                        onPlayNextClick = ::playNextChapter,
+                    )
                 )
             }
             withContext(Dispatchers.Main) {
@@ -63,19 +74,73 @@ internal class SummaryViewModel @Inject constructor(
         }
     }
 
-    fun onPlayerClicked() {
-        if (player.isPlaying()) stopPlayer() else startPlayer()
-    }
-
     fun onSpeedClicked() {
         val nextSpeed = _uiState.value.playbackSpeed.getNextSpeed()
         player.setPlaybackSpeed(nextSpeed.multiplier)
         _uiState.update { it.copy(playbackSpeed = nextSpeed) }
     }
 
-    fun startPlayer() = player.resume()
+    private fun refreshPlayer() {
+        //TODO move to the player logic
+        player.pause()
+        player.seekTo(0)
+        _uiState.update {
+            val playerControllerModel = it.playerControllerModel
+            it.copy(
+                playerControllerModel = playerControllerModel.copy(
+                    isPlaying = false,
+                )
+            )
+        }
+    }
 
-    fun stopPlayer() = player.pause()
+    private fun resumePlayer() {
+        player.resume()
+        _uiState.update {
+            val playerControllerModel = it.playerControllerModel
+            it.copy(
+                playerControllerModel = playerControllerModel.copy(
+                    isPlaying = true,
+                )
+            )
+        }
+    }
+
+    private fun pausePlayer() {
+        player.pause()
+        _uiState.update {
+            val playerControllerModel = it.playerControllerModel
+            it.copy(
+                playerControllerModel = playerControllerModel.copy(
+                    isPlaying = false,
+                )
+            )
+        }
+    }
+
+    private fun rewindPlayer() {
+        player.rewind(PlayerControllerModel.rewindMillis)
+    }
+
+    private fun fastForwardPlayer() {
+        //TODO improve delay after fast fastForward pressing
+        player.fastForward(PlayerControllerModel.fastForwardMillis)
+    }
+
+    private fun playNextChapter() {
+        val nextChapter = duneTestData.getNextChapter(currentPositionFlow.value)
+        if (nextChapter == null) {
+            refreshPlayer()
+        }
+        val newPosition = nextChapter?.time ?: 0
+        player.seekTo(newPosition)
+    }
+
+    private fun playPreviousChapter() {
+        val previousChapter = duneTestData.getPreviousChapter(currentPositionFlow.value)
+        val newPosition = previousChapter?.time ?: 0
+        player.seekTo(newPosition)
+    }
 
     private val duneTestData = BookSummaryModel(
         id = 1,
