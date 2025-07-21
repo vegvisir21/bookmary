@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HorizontalSlider(
     model: HorizontalSliderModel,
