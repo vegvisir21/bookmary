@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.Color
 
 internal val floralWhite = Color(0xFFFFF9F4)
 internal val alabaster = Color(0xFFF1EBE8)
+internal val brandeisBlue = Color(0xFF0066FC)
+internal val whiteCoffee = Color(0xFFE6DFDB)
 
 internal val raisinBlack = Color(0xFF272421)
 internal val spanishGray = Color(0xFF9F9994)
@@ -18,18 +20,24 @@ data class ExtendedColors(
     val textPrimaryColor: Color = Color.Unspecified,
     val textSecondaryColor: Color = Color.Unspecified,
     val optionButtonBackgroundColor: Color = Color.Unspecified,
+    val sliderThumbColor: Color = Color.Unspecified,
+    val sliderTrackColor: Color = Color.Unspecified,
 )
 
 val LightExtendedColors = ExtendedColors(
     textPrimaryColor = raisinBlack,
     textSecondaryColor = spanishGray,
     optionButtonBackgroundColor = alabaster,
+    sliderThumbColor = brandeisBlue,
+    sliderTrackColor = whiteCoffee,
 )
 
 val DarkExtendedColors = ExtendedColors(
     textPrimaryColor = raisinBlack,
     textSecondaryColor = spanishGray,
     optionButtonBackgroundColor = alabaster,
+    sliderThumbColor = brandeisBlue,
+    sliderTrackColor = whiteCoffee,
 )
 
 val LocalCustomColorsPalette = staticCompositionLocalOf { ExtendedColors() }

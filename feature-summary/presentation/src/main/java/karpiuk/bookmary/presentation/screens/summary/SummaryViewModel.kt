@@ -80,6 +80,10 @@ internal class SummaryViewModel @Inject constructor(
         _uiState.update { it.copy(playbackSpeed = nextSpeed) }
     }
 
+    fun seekTo(millis: Long) {
+        player.seekTo(millis)
+    }
+
     private fun refreshPlayer() {
         //TODO move to the player logic
         player.pause()

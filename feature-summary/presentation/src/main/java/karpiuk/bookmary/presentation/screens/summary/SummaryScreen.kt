@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,20 +46,16 @@ fun SummaryScreen(
     val viewModel: SummaryViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
-    val audioProgressMs by viewModel.currentPositionFlow.collectAsState()
+    val currentDuration by viewModel.currentPositionFlow.collectAsState()
     val duration by viewModel.durationFlow.collectAsState()
-
-    val progressFraction = remember(audioProgressMs) {
-        if (uiState.duration == 0L) 0f else audioProgressMs / uiState.duration.toFloat()
-    }
 
     SummaryScreen(
         modifier = modifier,
         uiState = uiState,
-        playerProgress = progressFraction,
-        progress = audioProgressMs,
-        duration = duration,
+        currentDuration = currentDuration,
+        totalDuration = duration,
         onSpeedClicked = viewModel::onSpeedClicked,
+        onSeekChanged = viewModel::seekTo
     )
 }
 
@@ -68,10 +63,10 @@ fun SummaryScreen(
 private fun SummaryScreen(
     modifier: Modifier = Modifier,
     uiState: SummaryUiState,
-    playerProgress: Float = 0f,
-    progress: Long = 0L,
-    duration: Long = 0L,
+    currentDuration: Long = 0L,
+    totalDuration: Long = 0L,
     onSpeedClicked: () -> Unit = {},
+    onSeekChanged: (Long) -> Unit = {},
 ) {
     val imageWeight = 4f
     val contentWeight = 6f
@@ -116,12 +111,9 @@ private fun SummaryScreen(
                     Spacer(modifier = Modifier.height(20.dp))
                     AudioProgressBar(
                         model = AudioProgressBarModel(
-                            progress = playerProgress,
-                            currentTime = formatTime(progress),
-                            totalTime = formatTime(duration),
-                            onSeekChanged = {
-                                //
-                            },
+                            currentTime = currentDuration,
+                            totalTime = totalDuration,
+                            onSeekChanged = onSeekChanged,
                         ),
                     )
                     Spacer(modifier = Modifier.height(20.dp))
@@ -140,13 +132,6 @@ private fun SummaryScreen(
             }
         }
     }
-}
-
-fun formatTime(millis: Long): String {
-    val totalSec = millis / 1000
-    val minutes = totalSec / 60
-    val seconds = totalSec % 60
-    return "%02d:%02d".format(minutes, seconds)
 }
 
 @Composable
