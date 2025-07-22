@@ -33,6 +33,7 @@ import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBar
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBarModel
 import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButton
 import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButtonModel
+import karpiuk.bookmary.core_ui.components.containers.LoadingContainer
 import karpiuk.bookmary.core_ui.components.player_controller.PlayerController
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
@@ -50,14 +51,16 @@ fun SummaryScreen(
     val currentDuration by viewModel.currentPositionFlow.collectAsState()
     val duration by viewModel.durationFlow.collectAsState()
 
-    SummaryScreen(
-        modifier = modifier,
-        uiState = uiState,
-        currentDuration = currentDuration,
-        totalDuration = duration,
-        onSpeedClicked = viewModel::onSpeedClicked,
-        onSeekChanged = viewModel::seekTo
-    )
+    LoadingContainer(uiState.isLoading) {
+        SummaryScreen(
+            modifier = modifier,
+            uiState = uiState,
+            currentDuration = currentDuration,
+            totalDuration = duration,
+            onSpeedClicked = viewModel::onSpeedClicked,
+            onSeekChanged = viewModel::seekTo
+        )
+    }
 }
 
 @Composable

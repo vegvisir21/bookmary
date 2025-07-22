@@ -3,10 +3,11 @@ package karpiuk.bookmary.presentation.screens.summary
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import karpiuk.bookmary.core_domain.core.Result
+import karpiuk.bookmary.core_domain.extensions.result
 import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
 import karpiuk.bookmary.domain.models.BookSummaryModel
-import karpiuk.bookmary.domain.models.ChapterModel
-import karpiuk.bookmary.presentation.models.BookSummaryUiModel
+import karpiuk.bookmary.domain.use_cases.GetBookSummaryUseCase
 import karpiuk.bookmary.presentation.screens.AudioPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,65 +21,62 @@ import javax.inject.Inject
 @HiltViewModel
 internal class SummaryViewModel @Inject constructor(
     private val player: AudioPlayer,
+    private val getBookSummaryUseCase: GetBookSummaryUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        SummaryUiState(
-            bookSummary = BookSummaryUiModel(
-                id = 1,
-                coverUrl = "",
-                audioSummaryUrl = "",
-                activeChapter = ChapterModel(
-                    id = 1,
-                    title = "Design is not how a thing looks, but how is works",
-                    time = 1,
-                ),
-            ),
-            activeChapterNumber = 1,
-            chaptersTotal = 10,
-        ),
-    )
+    private val _uiState = MutableStateFlow(SummaryUiState())
     val uiState = _uiState.asStateFlow()
 
     val currentPositionFlow: StateFlow<Long> = player.currentPositionFlow
     val durationFlow: StateFlow<Long> = player.durationFlow
 
+    private lateinit var bookSummary: BookSummaryModel
+
     init {
+        initDefaultState()
+        initData()
+    }
+
+    private fun initDefaultState() {
+        _uiState.update {
+            SummaryUiState(
+                playerControllerModel = PlayerControllerModel(
+                    isPlaying = false,
+                    onPlayPreviousClick = ::playPreviousChapter,
+                    onRewind = ::rewindPlayer,
+                    onPlayClick = ::resumePlayer,
+                    onPauseClick = ::pausePlayer,
+                    onForward = ::fastForwardPlayer,
+                    onPlayNextClick = ::playNextChapter,
+                ),
+            )
+        }
+    }
+
+    private fun initData() {
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update {
-                SummaryUiState(
-                    bookSummary = BookSummaryUiModel(
-                        id = duneTestData.id,
-                        coverUrl = duneTestData.coverUrl,
-                        audioSummaryUrl = duneTestData.audioSummaryUrl,
-                        activeChapter = duneTestData.chapters.first(),
-                    ),
-                    activeChapterNumber = 1,
-                    chaptersTotal = duneTestData.chapters.size,
-                    playerControllerModel = PlayerControllerModel(
-                        isPlaying = false,
-                        onPlayPreviousClick = ::playPreviousChapter,
-                        onRewind = ::rewindPlayer,
-                        onPlayClick = ::resumePlayer,
-                        onPauseClick = ::pausePlayer,
-                        onForward = ::fastForwardPlayer,
-                        onPlayNextClick = ::playNextChapter,
-                    )
-                )
-            }
-            withContext(Dispatchers.Main) {
-                val duration = player.init(_uiState.value.bookSummary.audioSummaryUrl)
-                _uiState.update { it.copy(duration = duration) }
-            }
-            player.currentPositionFlow.collect { position ->
-                updateActiveChapter(position)
+            getBookSummaryUseCase.result(Unit).collect { result ->
+                when (result) {
+                    is Result.Error -> {}
+                    Result.Loading -> _uiState.update { it.copy(isLoading = true) }
+                    is Result.Success<BookSummaryModel> -> {
+                        bookSummary = result.data
+                        withContext(Dispatchers.Main) {
+                            val duration = player.init(_uiState.value.bookSummary.audioSummaryUrl)
+                            _uiState.update { it.copy(duration = duration) }
+                        }
+                        player.currentPositionFlow.collect { position ->
+                            updateActiveChapter(position)
+                        }
+                    }
+                }
             }
         }
     }
 
     private fun updateActiveChapter(millis: Long) {
         val activeChapter = _uiState.value.bookSummary.activeChapter
-        val chapter = duneTestData.chapters
+        val chapter = bookSummary.chapters
             .lastOrNull { it.time <= millis }
 
         chapter?.let { newChapter ->
@@ -88,7 +86,7 @@ internal class SummaryViewModel @Inject constructor(
                         bookSummary = it.bookSummary.copy(
                             activeChapter = newChapter
                         ),
-                        activeChapterNumber = duneTestData.chapters.indexOf(newChapter) + 1
+                        activeChapterNumber = bookSummary.chapters.indexOf(newChapter) + 1
                     )
                 }
             }
@@ -152,7 +150,7 @@ internal class SummaryViewModel @Inject constructor(
     }
 
     private fun playNextChapter() {
-        val nextChapter = duneTestData.getNextChapter(_uiState.value.bookSummary.activeChapter)
+        val nextChapter = bookSummary.getNextChapter(_uiState.value.bookSummary.activeChapter)
         if (nextChapter == null) {
             refreshPlayer()
         }
@@ -166,52 +164,9 @@ internal class SummaryViewModel @Inject constructor(
         val newPosition = if (currentPositionFlow.value - currentChapter.time >= delayTime) {
             currentChapter.time
         } else {
-            duneTestData.getPreviousChapter(currentChapter).time
+            bookSummary.getPreviousChapter(currentChapter).time
         }
         player.seekTo(newPosition)
     }
-
-    private val duneTestData = BookSummaryModel(
-        id = 1,
-        coverUrl = "https://firebasestorage.googleapis.com/v0/b/bookmary-5087f.firebasestorage.app/o/dune_cover.jpg?alt=media&token=67ebb254-26e7-491a-b0eb-82a1b9969d51",
-        audioSummaryUrl = "https://firebasestorage.googleapis.com/v0/b/bookmary-5087f.firebasestorage.app/o/Dune.mp3?alt=media&token=0463f5e1-ad2b-4f79-9cf6-83e61ee8e720",
-        chapters = listOf(
-            ChapterModel(
-                id = 1,
-                title = "Intro",
-                time = 0,
-            ),
-            ChapterModel(
-                id = 2,
-                title = "Quick Book Summary",
-                time = 7000,
-            ),
-            ChapterModel(
-                id = 3,
-                title = "Plot Deep Dive",
-                time = 45000,
-            ),
-            ChapterModel(
-                id = 4,
-                title = "Main Characters",
-                time = 366000,
-            ),
-            ChapterModel(
-                id = 5,
-                title = "Main themes of the Book",
-                time = 578000,
-            ),
-            ChapterModel(
-                id = 6,
-                title = "About the Author",
-                time = 748000,
-            ),
-            ChapterModel(
-                id = 7,
-                title = "Outro",
-                time = 795000,
-            ),
-        ),
-    )
 
 }

@@ -75,6 +75,10 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
 
+    implementation(project(":core-domain"))
+    implementation(project(":core-data"))
     implementation(project(":core-ui"))
     implementation(project(":feature-summary:presentation"))
+    implementation(project(":feature-summary:domain"))
+    implementation(project(":feature-summary:data"))
 }

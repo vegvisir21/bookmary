@@ -5,10 +5,11 @@ import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerMod
 import karpiuk.bookmary.presentation.models.BookSummaryUiModel
 
 data class SummaryUiState(
-    val bookSummary: BookSummaryUiModel,
+    val bookSummary: BookSummaryUiModel = BookSummaryUiModel(),
     val playbackSpeed: PlaybackSpeed = PlaybackSpeed.Normal,
-    val activeChapterNumber: Int,
-    val chaptersTotal: Int,
+    val activeChapterNumber: Int = 0,
+    val chaptersTotal: Int = 0,
     val duration: Long = 0,
     val playerControllerModel: PlayerControllerModel = PlayerControllerModel(),
+    val isLoading: Boolean = false,
 )
