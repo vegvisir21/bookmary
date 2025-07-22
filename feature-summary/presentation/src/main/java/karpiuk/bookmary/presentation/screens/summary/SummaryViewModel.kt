@@ -5,14 +5,16 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import karpiuk.bookmary.core_domain.core.Result
 import karpiuk.bookmary.core_domain.extensions.result
+import karpiuk.bookmary.core_domain.tools.AudioPlayer
 import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
 import karpiuk.bookmary.domain.models.BookSummaryModel
 import karpiuk.bookmary.domain.use_cases.GetBookSummaryUseCase
-import karpiuk.bookmary.presentation.screens.AudioPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -27,8 +29,8 @@ internal class SummaryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SummaryUiState())
     val uiState = _uiState.asStateFlow()
 
-    val currentPositionFlow: StateFlow<Long> = player.currentPositionFlow
-    val durationFlow: StateFlow<Long> = player.durationFlow
+    //to avoid too much updates on uiState
+    val currentProgressFlow: StateFlow<Long> = player.playbackProgress
 
     private lateinit var bookSummary: BookSummaryModel
 
@@ -54,6 +56,7 @@ internal class SummaryViewModel @Inject constructor(
     }
 
     private fun initData() {
+        observePlayerData()
         viewModelScope.launch(Dispatchers.IO) {
             getBookSummaryUseCase.result(Unit).collect { result ->
                 when (result) {
@@ -62,16 +65,33 @@ internal class SummaryViewModel @Inject constructor(
                     is Result.Success<BookSummaryModel> -> {
                         bookSummary = result.data
                         withContext(Dispatchers.Main) {
-                            val duration = player.init(_uiState.value.bookSummary.audioSummaryUrl)
-                            _uiState.update { it.copy(duration = duration) }
-                        }
-                        player.currentPositionFlow.collect { position ->
-                            updateActiveChapter(position)
+                            player.prepare(_uiState.value.bookSummary.audioSummaryUrl)
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun observePlayerData() {
+        player.isPlaying.onEach { isPlaying ->
+            val playerController = _uiState.value.playerControllerModel
+            _uiState.update {
+                it.copy(
+                    playerControllerModel = playerController.copy(
+                        isPlaying = isPlaying
+                    )
+                )
+            }
+        }.launchIn(viewModelScope)
+
+        player.duration.onEach { duration ->
+            _uiState.update { it.copy(duration = duration) }
+        }.launchIn(viewModelScope)
+
+        player.playbackProgress.onEach {
+            updateActiveChapter(it)
+        }.launchIn(viewModelScope)
     }
 
     private fun updateActiveChapter(millis: Long) {
@@ -99,47 +119,13 @@ internal class SummaryViewModel @Inject constructor(
         _uiState.update { it.copy(playbackSpeed = nextSpeed) }
     }
 
-    fun seekTo(millis: Long) {
-        player.seekTo(millis)
-    }
+    fun seekTo(millis: Long) = player.seekTo(millis)
 
-    private fun refreshPlayer() {
-        //TODO move to the player logic
-        player.pause()
-        player.seekTo(0)
-        _uiState.update {
-            val playerControllerModel = it.playerControllerModel
-            it.copy(
-                playerControllerModel = playerControllerModel.copy(
-                    isPlaying = false,
-                )
-            )
-        }
-    }
+    private fun refreshPlayer() = player.refresh()
 
-    private fun resumePlayer() {
-        player.resume()
-        _uiState.update {
-            val playerControllerModel = it.playerControllerModel
-            it.copy(
-                playerControllerModel = playerControllerModel.copy(
-                    isPlaying = true,
-                )
-            )
-        }
-    }
+    private fun resumePlayer() = player.play()
 
-    private fun pausePlayer() {
-        player.pause()
-        _uiState.update {
-            val playerControllerModel = it.playerControllerModel
-            it.copy(
-                playerControllerModel = playerControllerModel.copy(
-                    isPlaying = false,
-                )
-            )
-        }
-    }
+    private fun pausePlayer() = player.pause()
 
     private fun rewindPlayer() {
         player.rewind(PlayerControllerModel.REWIND_MILLIS)
@@ -161,7 +147,7 @@ internal class SummaryViewModel @Inject constructor(
     private fun playPreviousChapter() {
         val currentChapter = _uiState.value.bookSummary.activeChapter
         val delayTime = BookSummaryModel.PREVIOUS_CHAPTER_DELAY
-        val newPosition = if (currentPositionFlow.value - currentChapter.time >= delayTime) {
+        val newPosition = if (currentProgressFlow.value - currentChapter.time >= delayTime) {
             currentChapter.time
         } else {
             bookSummary.getPreviousChapter(currentChapter).time

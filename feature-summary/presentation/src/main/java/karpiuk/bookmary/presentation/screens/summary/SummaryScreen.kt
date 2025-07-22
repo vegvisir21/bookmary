@@ -48,17 +48,34 @@ fun SummaryScreen(
     val viewModel: SummaryViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
-    val currentDuration by viewModel.currentPositionFlow.collectAsState()
-    val duration by viewModel.durationFlow.collectAsState()
+    val currentDuration by viewModel.currentProgressFlow.collectAsState()
 
-    LoadingContainer(uiState.isLoading) {
+        SummaryScreen(
+            modifier = modifier,
+            uiState = uiState,
+            isLoading = uiState.isLoading,
+            currentDuration = currentDuration,
+            onSpeedClicked = viewModel::onSpeedClicked,
+            onSeekChanged = viewModel::seekTo
+        )
+}
+
+@Composable
+private fun SummaryScreen(
+    modifier: Modifier = Modifier,
+    uiState: SummaryUiState,
+    isLoading: Boolean = false,
+    currentDuration: Long = 0L,
+    onSpeedClicked: () -> Unit = {},
+    onSeekChanged: (Long) -> Unit = {},
+) {
+    LoadingContainer(isLoading) {
         SummaryScreen(
             modifier = modifier,
             uiState = uiState,
             currentDuration = currentDuration,
-            totalDuration = duration,
-            onSpeedClicked = viewModel::onSpeedClicked,
-            onSeekChanged = viewModel::seekTo
+            onSpeedClicked = onSpeedClicked,
+            onSeekChanged = onSeekChanged
         )
     }
 }
@@ -68,7 +85,6 @@ private fun SummaryScreen(
     modifier: Modifier = Modifier,
     uiState: SummaryUiState,
     currentDuration: Long = 0L,
-    totalDuration: Long = 0L,
     onSpeedClicked: () -> Unit = {},
     onSeekChanged: (Long) -> Unit = {},
 ) {
@@ -116,7 +132,7 @@ private fun SummaryScreen(
                     AudioProgressBar(
                         model = AudioProgressBarModel(
                             currentTime = currentDuration,
-                            totalTime = totalDuration,
+                            totalTime = uiState.duration,
                             onSeekChanged = onSeekChanged,
                         ),
                     )
@@ -203,7 +219,35 @@ private fun SummaryScreenPreview() {
                 ),
                 activeChapterNumber = 1,
                 chaptersTotal = 10,
+                duration = 1764000,
             ),
+            currentDuration = 643000,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SummaryScreenLoadingPreview() {
+    BookmaryTheme {
+        SummaryScreen(
+            uiState = SummaryUiState(
+                bookSummary = BookSummaryUiModel(
+                    id = 1,
+                    coverUrl = "",
+                    audioSummaryUrl = "",
+                    activeChapter = ChapterModel(
+                        id = 1,
+                        title = "Design is not how a thing looks, but how is works",
+                        time = 1,
+                    ),
+                ),
+                activeChapterNumber = 1,
+                chaptersTotal = 10,
+                duration = 1764000,
+            ),
+            currentDuration = 643000,
+            isLoading = true,
         )
     }
 }
