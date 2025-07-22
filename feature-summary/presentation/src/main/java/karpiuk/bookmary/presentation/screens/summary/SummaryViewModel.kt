@@ -2,7 +2,6 @@ package karpiuk.bookmary.presentation.screens.summary
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
 import karpiuk.bookmary.domain.models.BookSummaryModel
@@ -71,6 +70,28 @@ internal class SummaryViewModel @Inject constructor(
                 val duration = player.init(_uiState.value.bookSummary.audioSummaryUrl)
                 _uiState.update { it.copy(duration = duration) }
             }
+            player.currentPositionFlow.collect { position ->
+                updateActiveChapter(position)
+            }
+        }
+    }
+
+    private fun updateActiveChapter(millis: Long) {
+        val activeChapter = _uiState.value.bookSummary.activeChapter
+        val chapter = duneTestData.chapters
+            .lastOrNull { it.time <= millis }
+
+        chapter?.let { newChapter ->
+            if (activeChapter.id != chapter.id) {
+                _uiState.update {
+                    it.copy(
+                        bookSummary = it.bookSummary.copy(
+                            activeChapter = newChapter
+                        ),
+                        activeChapterNumber = duneTestData.chapters.indexOf(newChapter) + 1
+                    )
+                }
+            }
         }
     }
 
@@ -123,16 +144,15 @@ internal class SummaryViewModel @Inject constructor(
     }
 
     private fun rewindPlayer() {
-        player.rewind(PlayerControllerModel.rewindMillis)
+        player.rewind(PlayerControllerModel.REWIND_MILLIS)
     }
 
     private fun fastForwardPlayer() {
-        //TODO improve delay after fast fastForward pressing
-        player.fastForward(PlayerControllerModel.fastForwardMillis)
+        player.fastForward(PlayerControllerModel.FAST_FORWARD_MILLIS)
     }
 
     private fun playNextChapter() {
-        val nextChapter = duneTestData.getNextChapter(currentPositionFlow.value)
+        val nextChapter = duneTestData.getNextChapter(_uiState.value.bookSummary.activeChapter)
         if (nextChapter == null) {
             refreshPlayer()
         }
@@ -141,8 +161,13 @@ internal class SummaryViewModel @Inject constructor(
     }
 
     private fun playPreviousChapter() {
-        val previousChapter = duneTestData.getPreviousChapter(currentPositionFlow.value)
-        val newPosition = previousChapter?.time ?: 0
+        val currentChapter = _uiState.value.bookSummary.activeChapter
+        val delayTime = BookSummaryModel.PREVIOUS_CHAPTER_DELAY
+        val newPosition = if (currentPositionFlow.value - currentChapter.time >= delayTime) {
+            currentChapter.time
+        } else {
+            duneTestData.getPreviousChapter(currentChapter).time
+        }
         player.seekTo(newPosition)
     }
 

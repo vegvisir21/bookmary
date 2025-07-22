@@ -6,24 +6,25 @@ data class BookSummaryModel(
     val audioSummaryUrl: String,
     val chapters: List<ChapterModel>,
 ) {
-
-    private val previousChapterDelayTime = 3_000
-
-    fun getNextChapter(millis: Long): ChapterModel? {
-        val sorted = chapters.sortedBy { it.time }
-        return sorted.firstOrNull { it.time >= millis }
+    companion object {
+        const val PREVIOUS_CHAPTER_DELAY = 3_000
     }
 
-    fun getPreviousChapter(millis: Long): ChapterModel? {
+    fun getNextChapter(current: ChapterModel): ChapterModel? {
         val sorted = chapters.sortedBy { it.time }
+        val index = sorted.indexOfFirst { it.id == current.id }
 
-        val current = sorted.lastOrNull { it.time <= millis }
-        val currentIndex = sorted.indexOf(current)
-        val offset = millis - (current?.time ?: 0L)
-        return if (offset < previousChapterDelayTime && currentIndex > 0) {
-            sorted[currentIndex - 1]
-        } else {
-            current
-        }
+        return if (index in 0 until sorted.lastIndex) {
+            sorted[index + 1]
+        } else null
+    }
+
+    fun getPreviousChapter(current: ChapterModel): ChapterModel {
+        val sorted = chapters.sortedBy { it.time }
+        val index = sorted.indexOfFirst { it.id == current.id }
+
+        return if (index > 0) {
+            sorted[index - 1]
+        } else chapters.first()
     }
 }

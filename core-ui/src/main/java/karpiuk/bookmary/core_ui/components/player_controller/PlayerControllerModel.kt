@@ -10,7 +10,7 @@ data class PlayerControllerModel(
     val onForward: () -> Unit = {},
 ) {
     companion object {
-        val rewindMillis = 5000L
-        val fastForwardMillis = 10000L
+        const val REWIND_MILLIS = 5000L
+        const val FAST_FORWARD_MILLIS = 10000L
     }
 }
