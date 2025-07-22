@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class ExoAudioPlayer (
+class ExoAudioPlayer(
     @ApplicationContext private val context: Context
 ) : AudioPlayer {
 
@@ -45,7 +45,13 @@ class ExoAudioPlayer (
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (player.playbackState == Player.STATE_READY) {
+                val state = player.playbackState
+                val shouldEmit = when (state) {
+                    Player.STATE_READY, Player.STATE_ENDED -> true
+                    else -> isPlayCompleted()
+                }
+
+                if (shouldEmit) {
                     _isPlaying.value = isPlaying
                 }
             }
@@ -64,13 +70,20 @@ class ExoAudioPlayer (
         progressJob?.cancel()
         progressJob = scope.launch {
             while (isActive) {
-                _playbackProgress.emit(player.currentPosition)
+                val realPosition = if (isPlayCompleted()) {
+                    player.pause()
+                    player.duration
+                } else {
+                    player.currentPosition
+                }
+                _playbackProgress.emit(realPosition.coerceAtLeast(0L))
                 delay(250L)
             }
         }
     }
 
     override fun play() {
+        if (isPlayCompleted()) refresh()
         player.play()
     }
 
@@ -102,5 +115,9 @@ class ExoAudioPlayer (
     override fun release() {
         progressJob?.cancel()
         player.release()
+    }
+
+    private fun isPlayCompleted(): Boolean {
+        return player.currentPosition >= player.duration
     }
 }

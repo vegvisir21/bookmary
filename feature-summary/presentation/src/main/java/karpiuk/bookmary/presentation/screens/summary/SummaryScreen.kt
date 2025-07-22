@@ -50,14 +50,14 @@ fun SummaryScreen(
 
     val currentDuration by viewModel.currentProgressFlow.collectAsState()
 
-        SummaryScreen(
-            modifier = modifier,
-            uiState = uiState,
-            isLoading = uiState.isLoading,
-            currentDuration = currentDuration,
-            onSpeedClicked = viewModel::onSpeedClicked,
-            onSeekChanged = viewModel::seekTo
-        )
+    SummaryScreen(
+        modifier = modifier,
+        uiState = uiState,
+        isLoading = uiState.isLoading,
+        currentDuration = currentDuration,
+        onSpeedClicked = viewModel::onSpeedClicked,
+        onSeekChanged = viewModel::seekTo
+    )
 }
 
 @Composable
