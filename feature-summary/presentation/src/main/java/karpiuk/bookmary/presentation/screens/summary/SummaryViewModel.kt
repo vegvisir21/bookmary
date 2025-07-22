@@ -9,6 +9,7 @@ import karpiuk.bookmary.core_domain.tools.AudioPlayer
 import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
 import karpiuk.bookmary.domain.models.BookSummaryModel
 import karpiuk.bookmary.domain.use_cases.GetBookSummaryUseCase
+import karpiuk.bookmary.presentation.mappers.mapToUi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +33,7 @@ internal class SummaryViewModel @Inject constructor(
     //to avoid too much updates on uiState
     val currentProgressFlow: StateFlow<Long> = player.playbackProgress
 
-    private lateinit var bookSummary: BookSummaryModel
+    private var bookSummary: BookSummaryModel? = null
 
     init {
         initDefaultState()
@@ -61,9 +62,17 @@ internal class SummaryViewModel @Inject constructor(
             getBookSummaryUseCase.result(Unit).collect { result ->
                 when (result) {
                     is Result.Error -> {}
-                    Result.Loading -> _uiState.update { it.copy(isLoading = true) }
+                    is Result.Loading -> _uiState.update { it.copy(isLoading = true) }
                     is Result.Success<BookSummaryModel> -> {
-                        bookSummary = result.data
+                        val loadedBookSummary = result.data
+                        bookSummary = loadedBookSummary
+                        _uiState.update {
+                            it.copy(
+                                bookSummary = loadedBookSummary.mapToUi(),
+                                chaptersTotal = loadedBookSummary.chapters.size,
+                                isLoading = false,
+                            )
+                        }
                         withContext(Dispatchers.Main) {
                             player.prepare(_uiState.value.bookSummary.audioSummaryUrl)
                         }
@@ -94,7 +103,7 @@ internal class SummaryViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    private fun updateActiveChapter(millis: Long) {
+    private fun updateActiveChapter(millis: Long) = bookSummary?.let { bookSummary ->
         val activeChapter = _uiState.value.bookSummary.activeChapter
         val chapter = bookSummary.chapters
             .lastOrNull { it.time <= millis }
@@ -135,8 +144,8 @@ internal class SummaryViewModel @Inject constructor(
         player.fastForward(PlayerControllerModel.FAST_FORWARD_MILLIS)
     }
 
-    private fun playNextChapter() {
-        val nextChapter = bookSummary.getNextChapter(_uiState.value.bookSummary.activeChapter)
+    private fun playNextChapter() = bookSummary?.let {
+        val nextChapter = it.getNextChapter(_uiState.value.bookSummary.activeChapter)
         if (nextChapter == null) {
             refreshPlayer()
         }
@@ -144,13 +153,13 @@ internal class SummaryViewModel @Inject constructor(
         player.seekTo(newPosition)
     }
 
-    private fun playPreviousChapter() {
+    private fun playPreviousChapter() = bookSummary?.let {
         val currentChapter = _uiState.value.bookSummary.activeChapter
         val delayTime = BookSummaryModel.PREVIOUS_CHAPTER_DELAY
         val newPosition = if (currentProgressFlow.value - currentChapter.time >= delayTime) {
             currentChapter.time
         } else {
-            bookSummary.getPreviousChapter(currentChapter).time
+            it.getPreviousChapter(currentChapter).time
         }
         player.seekTo(newPosition)
     }

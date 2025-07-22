@@ -45,7 +45,9 @@ class ExoAudioPlayer (
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _isPlaying.value = isPlaying
+                if (player.playbackState == Player.STATE_READY) {
+                    _isPlaying.value = isPlaying
+                }
             }
         })
     }
