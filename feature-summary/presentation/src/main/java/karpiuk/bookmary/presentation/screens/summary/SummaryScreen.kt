@@ -62,9 +62,9 @@ fun SummaryScreen(
 
 @Composable
 private fun SummaryScreen(
-    modifier: Modifier = Modifier,
+    isLoading: Boolean,
     uiState: SummaryUiState,
-    isLoading: Boolean = false,
+    modifier: Modifier = Modifier,
     currentDuration: Long = 0L,
     onSpeedClicked: () -> Unit = {},
     onSeekChanged: (Long) -> Unit = {},
@@ -82,8 +82,8 @@ private fun SummaryScreen(
 
 @Composable
 private fun SummaryScreen(
-    modifier: Modifier = Modifier,
     uiState: SummaryUiState,
+    modifier: Modifier = Modifier,
     currentDuration: Long = 0L,
     onSpeedClicked: () -> Unit = {},
     onSeekChanged: (Long) -> Unit = {},
