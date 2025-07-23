@@ -154,7 +154,7 @@ internal class SummaryViewModel @Inject constructor(
 
     fun seekTo(millis: Long) = player.seekTo(millis)
 
-    private fun refreshPlayer() = player.refresh()
+    private fun refreshPlayer(startAfter: Boolean) = player.refresh(startAfter = startAfter)
 
     private fun resumePlayer() = player.play()
 
@@ -171,10 +171,11 @@ internal class SummaryViewModel @Inject constructor(
     private fun playNextChapter() = bookSummary?.let {
         val nextChapter = it.getNextChapter(_uiState.value.bookSummary.activeChapter)
         if (nextChapter == null) {
-            refreshPlayer()
+            refreshPlayer(false)
+        } else {
+            val newPosition = nextChapter.time
+            player.seekTo(newPosition)
         }
-        val newPosition = nextChapter?.time ?: 0
-        player.seekTo(newPosition)
     }
 
     private fun playPreviousChapter() = bookSummary?.let {
@@ -205,4 +206,8 @@ internal class SummaryViewModel @Inject constructor(
         return stringProvider.getString(title_key_point, index, total)
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        player.release()
+    }
 }

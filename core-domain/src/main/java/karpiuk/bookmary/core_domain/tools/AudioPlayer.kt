@@ -11,7 +11,7 @@ interface AudioPlayer {
 
     fun play()
     fun pause()
-    fun refresh()
+    fun refresh(startAfter: Boolean)
 
     fun seekTo(positionMillis: Long)
     fun rewind(millis: Long)

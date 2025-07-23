@@ -73,10 +73,7 @@ fun SummaryScreen(
 
     DisposableEffect(viewModel) {
         onDispose {
-            PlayerService.updateClosability(
-                context = context,
-                isClosable = true,
-            )
+            PlayerService.closeService(context = context)
         }
     }
 

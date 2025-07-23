@@ -26,7 +26,6 @@ class PlayerService : Service() {
 
     companion object {
         const val ACTION_UPDATE_METADATA = "action_update_metadata"
-        const val ACTION_UPDATE_CLOSABILITY = "action_update_closability"
 
         const val ACTION_PLAY = "action_play"
         const val ACTION_PAUSE = "action_pause"
@@ -34,7 +33,6 @@ class PlayerService : Service() {
 
         const val EXTRA_BOOK_TITLE = "extra_book_title"
         const val EXTRA_CHAPTER_TITLE = "extra_chapter_title"
-        const val EXTRA_IS_CLOSABLE = "extra_is_closable"
 
         fun updatePlayerMetadata(
             context: Context,
@@ -49,14 +47,12 @@ class PlayerService : Service() {
             }
         )
 
-        fun updateClosability(
+        fun closeService(
             context: Context,
-            isClosable: Boolean
         ) = startService(
             context = context,
             intent = Intent(context, PlayerService::class.java).apply {
-                action = ACTION_UPDATE_CLOSABILITY
-                putExtra(EXTRA_IS_CLOSABLE, isClosable)
+                action = ACTION_CLOSE
             }
         )
 
@@ -76,7 +72,6 @@ class PlayerService : Service() {
     private val channelId = "player_channel"
     private var bookTitle: String = ""
     private var chapterTitle: String = ""
-    private var isClosable: Boolean = false
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isPlayingJob: Job? = null
@@ -107,20 +102,9 @@ class PlayerService : Service() {
                 updateNotification()
             }
 
-            ACTION_UPDATE_CLOSABILITY -> {
-                intent.getBooleanExtra(
-                    EXTRA_IS_CLOSABLE,
-                    false
-                ).let { isClosable = it }
-                updateNotification()
-            }
-
             ACTION_PLAY -> audioPlayer.play()
             ACTION_PAUSE -> audioPlayer.pause()
-            ACTION_CLOSE -> {
-                audioPlayer.release()
-                stopSelf()
-            }
+            ACTION_CLOSE -> { stopSelf() }
         }
         return START_STICKY
     }
@@ -160,25 +144,10 @@ class PlayerService : Service() {
             .setContentText(chapterTitle)
             .setSmallIcon(playPauseIcon)
             .addAction(playPauseIcon, playPauseText, playPauseIntent)
-            //TODO if app was closed - should open Summary screen with restoring the state
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
-            .setAutoCancel(!isClosable)
-            .setOngoing(isClosable)
-
-        if (isClosable) {
-            val closeIntent = PendingIntent.getService(
-                this, 2,
-                Intent(this, PlayerService::class.java).setAction(ACTION_CLOSE),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            builder.addAction(
-                R.drawable.ic_play_next,
-                stringProvider.getString(R.string.action_close),
-                closeIntent
-            )
-        }
+            .setAutoCancel(false)
+            .setOngoing(true)
 
         return builder.build()
     }

@@ -1,7 +1,9 @@
 package karpiuk.bookmary.core_player
 
 import android.content.Context
+import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,7 +23,9 @@ class ExoAudioPlayer(
     @ApplicationContext private val context: Context
 ) : AudioPlayer {
 
-    private val player: ExoPlayer = ExoPlayer.Builder(context).build()
+    private var isReleased = false
+
+    private var player: ExoPlayer = ExoPlayer.Builder(context).build()
 
     private val _isPlaying = MutableStateFlow(false)
     override val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -35,30 +39,40 @@ class ExoAudioPlayer(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var progressJob: Job? = null
 
+    private val playerListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(state: Int) {
+            if (state == Player.STATE_READY) {
+                _duration.value = player.duration.coerceAtLeast(0)
+            }
+        }
 
-    init {
-        player.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_READY) {
-                    _duration.value = player.duration.coerceAtLeast(0)
-                }
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            val state = player.playbackState
+            val shouldEmit = when (state) {
+                Player.STATE_READY, Player.STATE_ENDED -> true
+                else -> isPlayCompleted()
             }
 
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                val state = player.playbackState
-                val shouldEmit = when (state) {
-                    Player.STATE_READY, Player.STATE_ENDED -> true
-                    else -> isPlayCompleted()
-                }
-
-                if (shouldEmit) {
-                    _isPlaying.value = isPlaying
-                }
+            if (shouldEmit) {
+                _isPlaying.value = isPlaying
             }
-        })
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            Log.e("PlayerError", error.message.toString())
+        }
     }
 
     override fun prepare(url: String) {
+        _isPlaying.value = false
+        _duration.value = 0L
+        _playbackProgress.value = 0L
+
+        if (isReleased) {
+            player = ExoPlayer.Builder(context).build()
+            isReleased = false
+        }
+        player.addListener(playerListener)
         val mediaItem = MediaItem.fromUri(url)
         player.setMediaItem(mediaItem)
         player.prepare()
@@ -83,17 +97,20 @@ class ExoAudioPlayer(
     }
 
     override fun play() {
-        if (isPlayCompleted()) refresh()
-        player.play()
+        if (isPlayCompleted()) refresh(startAfter = true)
+        else player.play()
     }
 
     override fun pause() {
         player.pause()
     }
 
-    override fun refresh() {
+    override fun refresh(startAfter: Boolean) {
         player.seekTo(0)
-        player.pause()
+        if (startAfter) player.play() else {
+            _isPlaying.value = false
+            player.pause()
+        }
     }
 
     override fun seekTo(positionMillis: Long) {
@@ -115,6 +132,7 @@ class ExoAudioPlayer(
     override fun release() {
         progressJob?.cancel()
         player.release()
+        isReleased = true
     }
 
     private fun isPlayCompleted(): Boolean {
