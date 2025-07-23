@@ -7,6 +7,8 @@ enum class AppIconType(
     @DrawableRes val resId: Int,
 ) {
     FastForward10(R.drawable.ic_fast_forward_10),
+    Headphones(R.drawable.ic_headphones),
+    Menu(R.drawable.ic_menu),
     Pause(R.drawable.ic_pause),
     Play(R.drawable.ic_play),
     PlayNext(R.drawable.ic_play_next),

@@ -41,6 +41,8 @@ import karpiuk.bookmary.core_ui.components.player_controller.PlayerController
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
 import karpiuk.bookmary.domain.models.ChapterModel
+import karpiuk.bookmary.presentation.components.media_switcher.Mode
+import karpiuk.bookmary.presentation.components.media_switcher.MediaSwitcher
 import karpiuk.bookmary.presentation.models.BookSummaryUiModel
 import karpiuk.bookmary.presentation.services.PlayerService
 import kotlinx.coroutines.flow.launchIn
@@ -85,7 +87,8 @@ fun SummaryScreen(
         isLoading = uiState.isLoading,
         currentDuration = currentDuration,
         onSpeedClicked = viewModel::onSpeedClicked,
-        onSeekChanged = viewModel::seekTo
+        onSeekChanged = viewModel::seekTo,
+        onMediaModeChanged = viewModel::onModeChanged,
     )
 }
 
@@ -97,6 +100,7 @@ private fun SummaryScreen(
     currentDuration: Long = 0L,
     onSpeedClicked: () -> Unit = {},
     onSeekChanged: (Long) -> Unit = {},
+    onMediaModeChanged: (Mode) -> Unit = {},
 ) {
     LoadingContainer(isLoading) {
         SummaryScreen(
@@ -104,7 +108,8 @@ private fun SummaryScreen(
             uiState = uiState,
             currentDuration = currentDuration,
             onSpeedClicked = onSpeedClicked,
-            onSeekChanged = onSeekChanged
+            onSeekChanged = onSeekChanged,
+            onMediaModeChanged = onMediaModeChanged,
         )
     }
 }
@@ -116,6 +121,7 @@ private fun SummaryScreen(
     currentDuration: Long = 0L,
     onSpeedClicked: () -> Unit = {},
     onSeekChanged: (Long) -> Unit = {},
+    onMediaModeChanged: (Mode) -> Unit = {},
 ) {
     val imageWeight = 4f
     val contentWeight = 6f
@@ -177,6 +183,11 @@ private fun SummaryScreen(
                         model = uiState.playerControllerModel,
                     )
                     Spacer(modifier = Modifier.weight(1f))
+                    MediaSwitcher(
+                        selected = uiState.mediaMode,
+                        onModeSelected = onMediaModeChanged,
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
         }

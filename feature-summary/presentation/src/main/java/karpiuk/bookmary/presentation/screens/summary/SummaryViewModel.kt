@@ -9,6 +9,7 @@ import karpiuk.bookmary.core_domain.tools.AudioPlayer
 import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
 import karpiuk.bookmary.domain.models.BookSummaryModel
 import karpiuk.bookmary.domain.use_cases.GetBookSummaryUseCase
+import karpiuk.bookmary.presentation.components.media_switcher.Mode
 import karpiuk.bookmary.presentation.mappers.mapToUi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -167,6 +168,10 @@ internal class SummaryViewModel @Inject constructor(
             it.getPreviousChapter(currentChapter).time
         }
         player.seekTo(newPosition)
+    }
+
+    fun onModeChanged(mode: Mode) {
+        _uiState.update { it.copy(mediaMode = mode) }
     }
 
 }

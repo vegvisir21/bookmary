@@ -23,6 +23,8 @@ data class ExtendedColors(
     val optionButtonBackgroundColor: Color = Color.Unspecified,
     val sliderThumbColor: Color = Color.Unspecified,
     val sliderTrackColor: Color = Color.Unspecified,
+    val switcherActiveColor: Color = Color.Unspecified,
+    val borderColor: Color = Color.Unspecified,
     val loadingProgressColor: Color = Color.Unspecified,
 )
 
@@ -32,6 +34,8 @@ val LightExtendedColors = ExtendedColors(
     optionButtonBackgroundColor = alabaster,
     sliderThumbColor = brandeisBlue,
     sliderTrackColor = whiteCoffee,
+    switcherActiveColor = brandeisBlue,
+    borderColor = spanishGray,
     loadingProgressColor = blueJeans,
 )
 
@@ -41,6 +45,8 @@ val DarkExtendedColors = ExtendedColors(
     optionButtonBackgroundColor = alabaster,
     sliderThumbColor = brandeisBlue,
     sliderTrackColor = whiteCoffee,
+    switcherActiveColor = brandeisBlue,
+    borderColor = spanishGray,
     loadingProgressColor = blueJeans,
 )
 
