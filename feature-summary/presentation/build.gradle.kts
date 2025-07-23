@@ -63,6 +63,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
+
     implementation(project(":core-ui"))
     implementation(project(":core-domain"))
     implementation(project(":feature-summary:domain"))

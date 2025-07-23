@@ -15,5 +15,9 @@ dependencies {
     implementation(libs.dagger)
     kapt(libs.dagger.compiler)
 
+    testImplementation(kotlin("test"))
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+
     implementation(project(":core-domain"))
 }
