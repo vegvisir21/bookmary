@@ -17,6 +17,7 @@ class BookRepositoryImpl @Inject constructor() : BookRepository {
             emit(
                 BookSummaryModel(
                     id = 1,
+                    title = "Dune, Book 1",
                     coverUrl = "https://firebasestorage.googleapis.com/v0/b/bookmary-5087f.firebasestorage.app/o/dune_cover.jpg?alt=media&token=67ebb254-26e7-491a-b0eb-82a1b9969d51",
                     audioSummaryUrl = "https://firebasestorage.googleapis.com/v0/b/bookmary-5087f.firebasestorage.app/o/Dune.mp3?alt=media&token=0463f5e1-ad2b-4f79-9cf6-83e61ee8e720",
                     chapters = listOf(

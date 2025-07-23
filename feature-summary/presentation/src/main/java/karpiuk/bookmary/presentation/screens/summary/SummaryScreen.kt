@@ -16,12 +16,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,16 +41,33 @@ import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
 import karpiuk.bookmary.domain.models.ChapterModel
 import karpiuk.bookmary.presentation.models.BookSummaryUiModel
+import karpiuk.bookmary.presentation.services.PlayerService
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @Composable
 fun SummaryScreen(
     modifier: Modifier = Modifier,
 ) {
 
+    val context = LocalContext.current
+
     val viewModel: SummaryViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
     val currentDuration by viewModel.currentProgressFlow.collectAsState()
+
+    LaunchedEffect(viewModel) {
+        viewModel.launchPlayerServiceEvent
+            .onEach {
+                PlayerService.updatePlayerMetadata(
+                    context = context,
+                    bookTitle = uiState.bookSummary.title,
+                    chapterTitle = uiState.bookSummary.activeChapter.title
+                )
+            }
+            .launchIn(this)
+    }
 
     SummaryScreen(
         modifier = modifier,

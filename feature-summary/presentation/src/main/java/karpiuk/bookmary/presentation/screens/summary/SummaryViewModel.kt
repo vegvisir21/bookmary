@@ -11,6 +11,7 @@ import karpiuk.bookmary.domain.models.BookSummaryModel
 import karpiuk.bookmary.domain.use_cases.GetBookSummaryUseCase
 import karpiuk.bookmary.presentation.mappers.mapToUi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,8 @@ internal class SummaryViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SummaryUiState())
     val uiState = _uiState.asStateFlow()
+
+    val launchPlayerServiceEvent: MutableSharedFlow<Unit> = MutableSharedFlow()
 
     //to avoid too much updates on uiState
     val currentProgressFlow: StateFlow<Long> = player.playbackProgress
@@ -76,6 +79,7 @@ internal class SummaryViewModel @Inject constructor(
                         withContext(Dispatchers.Main) {
                             player.prepare(_uiState.value.bookSummary.audioSummaryUrl)
                         }
+                        launchPlayerServiceEvent.emit(Unit)
                     }
                 }
             }
@@ -103,7 +107,7 @@ internal class SummaryViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    private fun updateActiveChapter(millis: Long) = bookSummary?.let { bookSummary ->
+    private suspend fun updateActiveChapter(millis: Long) = bookSummary?.let { bookSummary ->
         val activeChapter = _uiState.value.bookSummary.activeChapter
         val chapter = bookSummary.chapters
             .lastOrNull { it.time <= millis }
@@ -118,6 +122,7 @@ internal class SummaryViewModel @Inject constructor(
                         activeChapterNumber = bookSummary.chapters.indexOf(newChapter) + 1
                     )
                 }
+                launchPlayerServiceEvent.emit(Unit)
             }
         }
     }
