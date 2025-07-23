@@ -13,6 +13,11 @@ import androidx.core.content.ContextCompat
 import dagger.hilt.android.AndroidEntryPoint
 import karpiuk.bookmary.core_domain.tools.AudioPlayer
 import karpiuk.bookmary.core_ui.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -20,6 +25,7 @@ class PlayerService : Service() {
 
     companion object {
         const val ACTION_UPDATE_METADATA = "action_update_metadata"
+        const val ACTION_UPDATE_CLOSABILITY = "action_update_closability"
 
         const val ACTION_PLAY = "action_play"
         const val ACTION_PAUSE = "action_pause"
@@ -27,6 +33,7 @@ class PlayerService : Service() {
 
         const val EXTRA_BOOK_TITLE = "extra_book_title"
         const val EXTRA_CHAPTER_TITLE = "extra_chapter_title"
+        const val EXTRA_IS_CLOSABLE = "extra_is_closable"
 
         fun updatePlayerMetadata(
             context: Context,
@@ -34,24 +41,28 @@ class PlayerService : Service() {
             chapterTitle: String
         ) = startService(
             context = context,
-            action = ACTION_UPDATE_METADATA,
-            bookTitle = bookTitle,
-            chapterTitle = chapterTitle
+            intent = Intent(context, PlayerService::class.java).apply {
+                action = ACTION_UPDATE_METADATA
+                putExtra(EXTRA_BOOK_TITLE, bookTitle)
+                putExtra(EXTRA_CHAPTER_TITLE, chapterTitle)
+            }
+        )
+
+        fun updateClosability(
+            context: Context,
+            isClosable: Boolean
+        ) = startService (
+            context = context,
+            intent = Intent(context, PlayerService::class.java).apply {
+                action = ACTION_UPDATE_CLOSABILITY
+                putExtra(EXTRA_IS_CLOSABLE, isClosable)
+            }
         )
 
         private fun startService(
             context: Context,
-            action: String,
-            bookTitle: String,
-            chapterTitle: String
-        ) {
-            val intent = Intent(context, PlayerService::class.java).apply {
-                this.action = action
-                putExtra(EXTRA_BOOK_TITLE, bookTitle)
-                putExtra(EXTRA_CHAPTER_TITLE, chapterTitle)
-            }
-            ContextCompat.startForegroundService(context, intent)
-        }
+            intent: Intent,
+        ) = ContextCompat.startForegroundService(context, intent)
     }
 
     @Inject
@@ -61,11 +72,25 @@ class PlayerService : Service() {
     private val channelId = "player_channel"
     private var bookTitle: String = ""
     private var chapterTitle: String = ""
+    private var isClosable: Boolean = false
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var isPlayingJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         startForeground(notificationId, buildNotification())
+        observeIsPlaying()
+    }
+
+    private fun observeIsPlaying() {
+        isPlayingJob?.cancel()
+        isPlayingJob = serviceScope.launch {
+            audioPlayer.isPlaying.collect { isPlaying ->
+                updateNotification()
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -73,8 +98,15 @@ class PlayerService : Service() {
 
         when (action) {
             ACTION_UPDATE_METADATA -> {
-                intent?.getStringExtra(EXTRA_BOOK_TITLE)?.let { bookTitle = it }
-                intent?.getStringExtra(EXTRA_CHAPTER_TITLE)?.let { chapterTitle = it }
+                intent.getStringExtra(EXTRA_BOOK_TITLE)?.let { bookTitle = it }
+                intent.getStringExtra(EXTRA_CHAPTER_TITLE)?.let { chapterTitle = it }
+                updateNotification()
+            }
+            ACTION_UPDATE_CLOSABILITY -> {
+                intent.getBooleanExtra(
+                    EXTRA_IS_CLOSABLE,
+                    false
+                ).let { isClosable = it }
                 updateNotification()
             }
             ACTION_PLAY -> audioPlayer.play()
@@ -89,40 +121,54 @@ class PlayerService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onDestroy() {
-        super.onDestroy()
-        audioPlayer.release()
-    }
-
     private fun buildNotification(): Notification {
-        val playIntent = PendingIntent.getService(
+        val isPlaying = audioPlayer.isPlaying.value
+
+        val packageManager = this.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(this.packageName)?.apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val playPauseIntent = PendingIntent.getService(
             this, 0,
-            Intent(this, PlayerService::class.java).setAction(ACTION_PLAY),
+            Intent(this, PlayerService::class.java).apply {
+                action = if (isPlaying) ACTION_PAUSE else ACTION_PLAY
+            },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val pauseIntent = PendingIntent.getService(
-            this, 1,
-            Intent(this, PlayerService::class.java).setAction(ACTION_PAUSE),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val playPauseIcon = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+        val playPauseText = if (isPlaying) "Pause" else "Play"
 
-        val closeIntent = PendingIntent.getService(
-            this, 2,
-            Intent(this, PlayerService::class.java).setAction(ACTION_CLOSE),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        return NotificationCompat.Builder(this, channelId)
+        val builder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(bookTitle)
             .setContentText(chapterTitle)
-            .setSmallIcon(R.drawable.ic_play) // заміни на свій
-            .addAction(R.drawable.ic_pause, "Пауза", pauseIntent)
-            .addAction(R.drawable.ic_play, "Відтворити", playIntent)
-            .addAction(R.drawable.ic_play_next, "Закрити", closeIntent)
+            .setSmallIcon(playPauseIcon)
+            .addAction(playPauseIcon, playPauseText, playPauseIntent)
+            //TODO if app was closed - should open Summary screen with restoring the state
+            .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
-            .setOngoing(true)
-            .build()
+            .setAutoCancel(!isClosable)
+            .setOngoing(isClosable)
+
+        if (isClosable) {
+            val closeIntent = PendingIntent.getService(
+                this, 2,
+                Intent(this, PlayerService::class.java).setAction(ACTION_CLOSE),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            builder.addAction(R.drawable.ic_play_next, "Close", closeIntent)
+        }
+
+        return builder.build()
     }
 
     private fun updateNotification() {
@@ -133,11 +179,17 @@ class PlayerService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             channelId,
-            "Аудіо відтворення",
+            "Audio output",
             NotificationManager.IMPORTANCE_LOW
         )
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isPlayingJob?.cancel()
+        audioPlayer.release()
     }
 }
 

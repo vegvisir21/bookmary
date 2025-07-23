@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -63,10 +64,19 @@ fun SummaryScreen(
                 PlayerService.updatePlayerMetadata(
                     context = context,
                     bookTitle = uiState.bookSummary.title,
-                    chapterTitle = uiState.bookSummary.activeChapter.title
+                    chapterTitle = uiState.bookSummary.activeChapter.title,
                 )
             }
             .launchIn(this)
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose {
+            PlayerService.updateClosability(
+                context = context,
+                isClosable = true,
+            )
+        }
     }
 
     SummaryScreen(
