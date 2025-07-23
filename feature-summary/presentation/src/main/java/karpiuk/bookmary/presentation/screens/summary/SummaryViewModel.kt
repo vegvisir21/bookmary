@@ -4,10 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import karpiuk.bookmary.core_domain.core.Result
+import karpiuk.bookmary.core_domain.enums.PlaybackSpeed
 import karpiuk.bookmary.core_domain.extensions.result
+import karpiuk.bookmary.core_domain.extensions.toTrimmedString
 import karpiuk.bookmary.core_domain.tools.AudioPlayer
+import karpiuk.bookmary.core_ui.R.string.title_key_point
+import karpiuk.bookmary.core_ui.R.string.title_speed
 import karpiuk.bookmary.core_ui.components.player_controller.PlayerControllerModel
+import karpiuk.bookmary.core_ui.tools.StringProvider
 import karpiuk.bookmary.domain.models.BookSummaryModel
+import karpiuk.bookmary.domain.models.ChapterModel
 import karpiuk.bookmary.domain.use_cases.GetBookSummaryUseCase
 import karpiuk.bookmary.presentation.components.media_switcher.Mode
 import karpiuk.bookmary.presentation.mappers.mapToUi
@@ -26,6 +32,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class SummaryViewModel @Inject constructor(
     private val player: AudioPlayer,
+    private val stringProvider: StringProvider,
     private val getBookSummaryUseCase: GetBookSummaryUseCase,
 ) : ViewModel() {
 
@@ -38,6 +45,7 @@ internal class SummaryViewModel @Inject constructor(
     val currentProgressFlow: StateFlow<Long> = player.playbackProgress
 
     private var bookSummary: BookSummaryModel? = null
+    private var playbackSpeed: PlaybackSpeed = PlaybackSpeed.Normal
 
     init {
         initDefaultState()
@@ -71,10 +79,14 @@ internal class SummaryViewModel @Inject constructor(
                         val loadedBookSummary = result.data
                         bookSummary = loadedBookSummary
                         _uiState.update {
+                            val uiModel = loadedBookSummary.mapToUi()
                             it.copy(
-                                bookSummary = loadedBookSummary.mapToUi(),
-                                chaptersTotal = loadedBookSummary.chapters.size,
+                                bookSummary = uiModel,
                                 isLoading = false,
+                                chaptersCounterTitle = getChapterCounterTitle(
+                                    currentChapter = uiModel.activeChapter,
+                                ),
+                                speedTitle = getFormattedSpeedTitle(),
                             )
                         }
                         withContext(Dispatchers.Main) {
@@ -118,9 +130,11 @@ internal class SummaryViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         bookSummary = it.bookSummary.copy(
-                            activeChapter = newChapter
+                            activeChapter = newChapter,
                         ),
-                        activeChapterNumber = bookSummary.chapters.indexOf(newChapter) + 1
+                        chaptersCounterTitle = getChapterCounterTitle(
+                            currentChapter = newChapter,
+                        ),
                     )
                 }
                 launchPlayerServiceEvent.emit(Unit)
@@ -129,9 +143,13 @@ internal class SummaryViewModel @Inject constructor(
     }
 
     fun onSpeedClicked() {
-        val nextSpeed = _uiState.value.playbackSpeed.getNextSpeed()
-        player.setPlaybackSpeed(nextSpeed.multiplier)
-        _uiState.update { it.copy(playbackSpeed = nextSpeed) }
+        playbackSpeed = playbackSpeed.getNextSpeed()
+        player.setPlaybackSpeed(playbackSpeed.multiplier)
+        _uiState.update {
+            it.copy(
+                speedTitle = getFormattedSpeedTitle()
+            )
+        }
     }
 
     fun seekTo(millis: Long) = player.seekTo(millis)
@@ -172,6 +190,19 @@ internal class SummaryViewModel @Inject constructor(
 
     fun onModeChanged(mode: Mode) {
         _uiState.update { it.copy(mediaMode = mode) }
+    }
+
+    private fun getFormattedSpeedTitle(): String {
+        return stringProvider.getString(
+            title_speed,
+            playbackSpeed.multiplier.toTrimmedString()
+        )
+    }
+
+    private fun getChapterCounterTitle(currentChapter: ChapterModel): String {
+        val index = bookSummary?.chapters?.indexOf(currentChapter)?.plus(1) ?: 0
+        val total = bookSummary?.chapters?.size ?: 0
+        return stringProvider.getString(title_key_point, index, total)
     }
 
 }

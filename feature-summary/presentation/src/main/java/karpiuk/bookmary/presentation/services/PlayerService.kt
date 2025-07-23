@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import dagger.hilt.android.AndroidEntryPoint
 import karpiuk.bookmary.core_domain.tools.AudioPlayer
 import karpiuk.bookmary.core_ui.R
+import karpiuk.bookmary.core_ui.tools.StringProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -51,7 +52,7 @@ class PlayerService : Service() {
         fun updateClosability(
             context: Context,
             isClosable: Boolean
-        ) = startService (
+        ) = startService(
             context = context,
             intent = Intent(context, PlayerService::class.java).apply {
                 action = ACTION_UPDATE_CLOSABILITY
@@ -67,6 +68,9 @@ class PlayerService : Service() {
 
     @Inject
     lateinit var audioPlayer: AudioPlayer
+
+    @Inject
+    lateinit var stringProvider: StringProvider
 
     private val notificationId = 1001
     private val channelId = "player_channel"
@@ -102,6 +106,7 @@ class PlayerService : Service() {
                 intent.getStringExtra(EXTRA_CHAPTER_TITLE)?.let { chapterTitle = it }
                 updateNotification()
             }
+
             ACTION_UPDATE_CLOSABILITY -> {
                 intent.getBooleanExtra(
                     EXTRA_IS_CLOSABLE,
@@ -109,6 +114,7 @@ class PlayerService : Service() {
                 ).let { isClosable = it }
                 updateNotification()
             }
+
             ACTION_PLAY -> audioPlayer.play()
             ACTION_PAUSE -> audioPlayer.pause()
             ACTION_CLOSE -> {
@@ -145,7 +151,9 @@ class PlayerService : Service() {
         )
 
         val playPauseIcon = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-        val playPauseText = if (isPlaying) "Pause" else "Play"
+        val playPauseText = stringProvider.getString(
+            if (isPlaying) R.string.action_pause else R.string.action_play
+        )
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(bookTitle)
@@ -165,7 +173,11 @@ class PlayerService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            builder.addAction(R.drawable.ic_play_next, "Close", closeIntent)
+            builder.addAction(
+                R.drawable.ic_play_next,
+                stringProvider.getString(R.string.action_close),
+                closeIntent
+            )
         }
 
         return builder.build()

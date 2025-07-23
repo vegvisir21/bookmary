@@ -1,0 +1,12 @@
+<resources>
+
+    <!--Actions-->
+    <string name="action_play">Play</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_close">Close</string>
+
+    <!--Titles-->
+    <string name="title_speed">Speed x%s</string>
+    <string name="title_key_point">Key point %d of %d</string>
+
+</resources>

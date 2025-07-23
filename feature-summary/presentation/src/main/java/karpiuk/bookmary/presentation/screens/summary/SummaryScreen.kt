@@ -31,7 +31,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import karpiuk.bookmary.core_domain.extensions.toTrimmedString
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBar
 import karpiuk.bookmary.core_ui.components.audio_progress_bar.AudioProgressBarModel
 import karpiuk.bookmary.core_ui.components.buttons.option_button.OptionButton
@@ -41,8 +40,8 @@ import karpiuk.bookmary.core_ui.components.player_controller.PlayerController
 import karpiuk.bookmary.core_ui.theme.BookmaryTheme
 import karpiuk.bookmary.core_ui.theme.customColors
 import karpiuk.bookmary.domain.models.ChapterModel
-import karpiuk.bookmary.presentation.components.media_switcher.Mode
 import karpiuk.bookmary.presentation.components.media_switcher.MediaSwitcher
+import karpiuk.bookmary.presentation.components.media_switcher.Mode
 import karpiuk.bookmary.presentation.models.BookSummaryUiModel
 import karpiuk.bookmary.presentation.services.PlayerService
 import kotlinx.coroutines.flow.launchIn
@@ -159,8 +158,7 @@ private fun SummaryScreen(
                 ) {
                     Spacer(modifier = Modifier.height(40.dp))
                     ChapterInfo(
-                        chapterNumber = uiState.activeChapterNumber,
-                        chaptersTotal = uiState.chaptersTotal,
+                        chapterCounterTitle = uiState.chaptersCounterTitle,
                         chapterTitle = uiState.bookSummary.activeChapter.title,
                     )
                     Spacer(modifier = Modifier.height(20.dp))
@@ -174,7 +172,7 @@ private fun SummaryScreen(
                     Spacer(modifier = Modifier.height(20.dp))
                     OptionButton(
                         model = OptionButtonModel(
-                            title = "Speed x${uiState.playbackSpeed.multiplier.toTrimmedString()}",
+                            title = uiState.speedTitle,
                             onClick = onSpeedClicked,
                         ),
                     )
@@ -212,8 +210,7 @@ private fun BookCover(
 @Composable
 private fun ChapterInfo(
     modifier: Modifier = Modifier,
-    chapterNumber: Int,
-    chaptersTotal: Int,
+    chapterCounterTitle: String,
     chapterTitle: String,
 ) {
     Column(
@@ -221,7 +218,7 @@ private fun ChapterInfo(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Key point $chapterNumber of $chaptersTotal".uppercase(),
+            text = chapterCounterTitle.uppercase(),
             style = MaterialTheme.typography.bodyLarge.copy(
                 color = MaterialTheme.customColors.textSecondaryColor,
             ),
@@ -257,8 +254,8 @@ private fun SummaryScreenPreview() {
                         time = 1,
                     ),
                 ),
-                activeChapterNumber = 1,
-                chaptersTotal = 10,
+                speedTitle = "Speed x1.5",
+                chaptersCounterTitle = "Key point 3 of 7",
                 duration = 1764000,
             ),
             currentDuration = 643000,
@@ -282,8 +279,8 @@ private fun SummaryScreenLoadingPreview() {
                         time = 1,
                     ),
                 ),
-                activeChapterNumber = 1,
-                chaptersTotal = 10,
+                speedTitle = "Speed x1.5",
+                chaptersCounterTitle = "Key point 3 of 7",
                 duration = 1764000,
             ),
             currentDuration = 643000,
